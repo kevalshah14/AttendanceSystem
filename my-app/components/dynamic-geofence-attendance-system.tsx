@@ -35,11 +35,7 @@ export function DynamicGeofenceAttendanceSystemComponent() {
     fetchIpAddress()
   }, [])
 
-  useEffect(() => {
-    if (geofence) {
-      checkLocation()
-    }
-  }, [geofence])
+
 
   const setGeofenceLocation = () => {
     setIsSettingGeofence(true)
@@ -93,6 +89,11 @@ export function DynamicGeofenceAttendanceSystemComponent() {
       setMessage("Geolocation is not supported by your browser.")
     }
   }
+  useEffect(() => {
+    if (geofence) {
+      checkLocation()
+    }
+  }, [geofence])
 
   const fetchIpAddress = async () => {
     try {
