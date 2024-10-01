@@ -76,3 +76,11 @@ body {
     @apply bg-background text-foreground;
   }
 }
+/* globals.css */
+
+.bg-robotics {
+  background-image: url('/images/robotics-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

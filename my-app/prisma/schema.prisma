@@ -1,0 +1,26 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Geofence {
+  id           String   @id @default(uuid())
+  attendanceId String   @unique
+  lat          Float
+  lng          Float
+  radius       Float
+  expiresAt    DateTime
+}
+
+model AttendanceRecord {
+  id           String   @id @default(uuid())
+  name         String
+  asuId        String
+  date         DateTime @default(now())
+  ip           String
+  attendanceId String
+}
