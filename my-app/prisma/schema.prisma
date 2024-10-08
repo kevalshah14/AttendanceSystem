@@ -23,4 +23,6 @@ model AttendanceRecord {
   date         DateTime @default(now())
   ip           String
   attendanceId String
+
+  @@index([ip, date])
 }

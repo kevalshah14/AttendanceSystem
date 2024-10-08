@@ -44,7 +44,7 @@ export function DynamicGeofenceAttendanceSystemComponent() {
           const newGeofence: GeofenceArea = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-            radius: 100, // 1000 meters radius
+            radius: 100, // 100 meters radius
           };
 
           // Save geofence to backend

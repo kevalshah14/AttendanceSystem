@@ -25,15 +25,15 @@ export default function AttendancePage({ params }: { params: { attendanceId: str
   const [name, setName] = useState('');
   const [asuId, setAsuId] = useState('');
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [ipAddress, setIpAddress] = useState('0.0.0.0');
   const [loadingGeofence, setLoadingGeofence] = useState(true);
   const [asuIdError, setAsuIdError] = useState('');
 
   useEffect(() => {
     if (attendanceId) {
       fetchGeofenceData();
-      fetchIpAddress();
+      // Removed fetchIpAddress as IP is handled server-side
     }
   }, [attendanceId]);
 
@@ -47,10 +47,12 @@ export default function AttendancePage({ params }: { params: { attendanceId: str
         checkLocation(data);
       } else {
         setMessage('Invalid or expired attendance link.');
+        setMessageType('error');
       }
     } catch (error) {
       console.error('Error fetching geofence:', error);
       setMessage('An error occurred while fetching geofence data.');
+      setMessageType('error');
     } finally {
       setLoadingGeofence(false);
     }
@@ -66,20 +68,24 @@ export default function AttendancePage({ params }: { params: { attendanceId: str
             geofenceData.lat,
             geofenceData.lng
           );
-          setIsWithinGeofence(distance <= geofenceData.radius);
+          const withinGeofence = distance <= geofenceData.radius;
+          setIsWithinGeofence(withinGeofence);
           setMessage(
-            distance <= geofenceData.radius
+            withinGeofence
               ? "You're within the class area. You can submit your attendance."
               : "You're outside the class area. Attendance can only be submitted from within the class."
           );
+          setMessageType(withinGeofence ? 'info' : 'error');
         },
         (error) => {
           console.error('Error getting location:', error);
           setMessage('Unable to determine your location. Please enable location services.');
+          setMessageType('error');
         }
       );
     } else {
       setMessage('Geolocation is not supported by your browser.');
+      setMessageType('error');
     }
   };
 
@@ -100,16 +106,6 @@ export default function AttendancePage({ params }: { params: { attendanceId: str
 
   const deg2rad = (deg: number) => {
     return deg * (Math.PI / 180);
-  };
-
-  const fetchIpAddress = async () => {
-    try {
-      const response = await fetch('https://api.ipify.org?format=json');
-      const data = await response.json();
-      setIpAddress(data.ip);
-    } catch (error) {
-      console.error('Error fetching IP address:', error);
-    }
   };
 
   const validateAsuId = (id: string) => {
@@ -140,23 +136,33 @@ export default function AttendancePage({ params }: { params: { attendanceId: str
         const response = await fetch('/api/attendance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, asuId, attendanceId, ip: ipAddress }),
+          body: JSON.stringify({ name, asuId, attendanceId }), // Removed 'ip'
         });
+
+        const result = await response.json();
+
         if (response.ok) {
           setMessage(`Attendance submitted for ${name} (ASU ID: ${asuId})`);
+          setMessageType('success');
           setName('');
           setAsuId('');
+        } else if (response.status === 409) { // Conflict status for duplicate submission
+          setMessage('Attendance has already been submitted from your IP address today.');
+          setMessageType('error');
         } else {
-          setMessage('Failed to submit attendance.');
+          setMessage(result.message || 'Failed to submit attendance.');
+          setMessageType('error');
         }
       } catch (error) {
         console.error('Error submitting attendance:', error);
         setMessage('An error occurred while submitting attendance.');
+        setMessageType('error');
       } finally {
         setIsSubmitting(false);
       }
     } else {
       setMessage('You must be within the class area to submit attendance.');
+      setMessageType('error');
     }
   };
 
@@ -175,10 +181,14 @@ export default function AttendancePage({ params }: { params: { attendanceId: str
         {message && (
           <div
             className={`mb-4 p-3 rounded-md flex items-center space-x-2 ${
-              isWithinGeofence ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'
+              messageType === 'success'
+                ? 'bg-green-50 text-green-700'
+                : messageType === 'error'
+                ? 'bg-red-50 text-red-700'
+                : 'bg-yellow-50 text-yellow-700'
             }`}
           >
-            {isWithinGeofence ? (
+            {messageType === 'success' ? (
               <CheckCircle className="w-5 h-5" />
             ) : (
               <AlertCircle className="w-5 h-5" />
